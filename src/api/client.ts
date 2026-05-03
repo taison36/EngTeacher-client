@@ -1,12 +1,12 @@
 import axios from 'axios';
 import type {
     User,
+    UserSettings,
     Session,
     Exercise,
     ChatMessage,
     ChatMessageRequest,
-    ChatMessageResponse,
-    Phrase
+    ChatMessageResponse
 } from '@/types';
 
 const api = axios.create({
@@ -22,8 +22,17 @@ export const userApi = {
             headers: { 'Content-Type': 'text/plain' }
         }),
 
-    addPhrases: (userId: string, phrases: Phrase[]) =>
-        api.post<User>(`/user/${userId}/phrases`, phrases)
+    getUser: (userId: string) =>
+        api.get<User>(`/user/${userId}`),
+
+    getUserByName: (name: string) =>
+        api.get<User>(`/user/by-name/${name}`),
+
+    addPhrases: (userId: string, phrases: { content: string }[]) =>
+        api.post<User>(`/user/${userId}/phrases`, phrases),
+
+    updateSettings: (userId: string, settings: UserSettings) =>
+        api.put<UserSettings>(`/user/${userId}/settings`, settings)
 };
 
 export const sessionApi = {
@@ -34,7 +43,7 @@ export const sessionApi = {
         api.get<Session>(`/user/${userId}/session/${sessionId}`),
 
     getMessages: (userId: string, sessionId: string) =>
-        api.get<ChatMessage[]>(`/user/${userId}/session/${sessionId}`),
+        api.get<ChatMessage[]>(`/user/${userId}/session/${sessionId}/messages`),
 
     createExercises: (userId: string, sessionId: string) =>
         api.post<Exercise[]>(`/user/${userId}/session/${sessionId}/exercise`)

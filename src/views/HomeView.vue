@@ -9,15 +9,6 @@
           placeholder="Enter your name"
       />
       <button @click="createUser">Start Learning</button>
-
-      <div class="phrase-input">
-        <h3>Add phrases to learn (one per line):</h3>
-        <textarea
-            v-model="phrasesInput"
-            placeholder="a tin of&#10;enjoy yourself&#10;omit"
-            rows="5"
-        />
-      </div>
     </div>
 
     <!-- Main App -->
@@ -35,71 +26,90 @@
           @send-message="handleSendMessage"
       />
 
-      <ExerciseList :exercises="currentExercises" />
+      <ExerciseList :exercises="currentExercises" @generate-exercises="handleGenerateExercises" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useUserStore } from '@/stores/userStore';
 import { userApi, sessionApi, chatApi } from '@/api/client';
 import SessionList from '@/components/SessionList.vue';
 import ChatPanel from '@/components/ChatPanel.vue';
 import ExerciseList from '@/components/ExerciseList.vue';
-import type { Session, ChatMessage, Exercise, Phrase } from '@/types';
+import type { Session, ChatMessage } from '@/types';
 
+const router = useRouter();
 const userStore = useUserStore();
 
 const username = ref('');
-const phrasesInput = ref('');
-const sessions = ref<Session[]>([]);
+const sessions = computed(() => userStore.user?.sessions ?? []);
 const currentSession = ref<Session | null>(null);
 const messages = ref<ChatMessage[]>([]);
 const loading = ref(false);
 
 const currentExercises = computed(() => currentSession.value?.exercises || []);
 
-onMounted(() => {
+onMounted(async () => {
   userStore.loadUser();
+  if (userStore.user) {
+    try {
+      const response = await userApi.getUser(userStore.user.id);
+      userStore.setUser(response.data);
+      await openOrCreateSession();
+    } catch {
+      userStore.clearUser();
+    }
+  }
 });
 
 async function createUser() {
   if (!username.value.trim()) return;
 
   try {
-    const response = await userApi.createUser(username.value);
-    userStore.setUser(response.data);
-
-    // Add phrases if provided
-    if (phrasesInput.value.trim()) {
-      const phrases: Phrase[] = phrasesInput.value
-          .split('\n')
-          .filter(line => line.trim())
-          .map(content => ({
-            id: '',
-            content: content.trim()
-          }));
-
-      await userApi.addPhrases(response.data.id, phrases);
+    let user;
+    try {
+      const response = await userApi.getUserByName(username.value.trim());
+      user = response.data;
+    } catch {
+      const response = await userApi.createUser(username.value.trim());
+      user = response.data;
     }
+    userStore.setUser(user);
+    await openOrCreateSession();
   } catch (error) {
-    console.error('Failed to create user:', error);
+    console.error('Failed to load or create user:', error);
+  }
+}
+
+async function openOrCreateSession() {
+  if ((userStore.user?.phrases?.length ?? 0) === 0) {
+    router.push('/phrases');
+    return;
+  }
+  const userSessions = userStore.user?.sessions ?? [];
+  if (userSessions.length > 0) {
+    await loadSession(userSessions[userSessions.length - 1].id);
+  } else {
+    await createSession();
   }
 }
 
 async function createSession() {
   if (!userStore.user) return;
 
+  if ((userStore.user.phrases?.length ?? 0) === 0) {
+    router.push('/phrases');
+    return;
+  }
+
   try {
     const response = await sessionApi.createSession(userStore.user.id);
-    sessions.value.push(response.data);
     currentSession.value = response.data;
+    userStore.user.sessions.push(response.data);
     messages.value = [];
-
-    // Create initial exercises
-    await sessionApi.createExercises(userStore.user.id, response.data.id);
-    await loadSession(response.data.id);
   } catch (error) {
     console.error('Failed to create session:', error);
   }
@@ -121,6 +131,17 @@ async function loadSession(sessionId: string) {
   }
 }
 
+async function handleGenerateExercises() {
+  if (!userStore.user || !currentSession.value) return;
+
+  try {
+    const response = await sessionApi.createExercises(userStore.user.id, currentSession.value.id);
+    currentSession.value.exercises = response.data;
+  } catch (error) {
+    console.error('Failed to generate exercises:', error);
+  }
+}
+
 async function handleSendMessage(message: string) {
   if (!userStore.user || !currentSession.value) {
     // Auto-create session if doesn't exist
@@ -128,6 +149,7 @@ async function handleSendMessage(message: string) {
     if (!currentSession.value) return;
   }
 
+  messages.value.push({ content: message, type: 'USER' });
   loading.value = true;
 
   try {
@@ -135,12 +157,6 @@ async function handleSendMessage(message: string) {
       userId: userStore.user!.id,
       sessionId: currentSession.value.id,
       message
-    });
-
-    // Add user message
-    messages.value.push({
-      content: message,
-      type: 'USER'
     });
 
     // Add agent response
@@ -182,38 +198,21 @@ async function handleSendMessage(message: string) {
 .user-setup input {
   width: 300px;
   padding: 0.75rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-size: 16px;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .user-setup button {
   padding: 0.75rem 2rem;
-  background: #007bff;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 16px;
-}
-
-.phrase-input {
-  width: 400px;
-  margin-top: 2rem;
-}
-
-.phrase-input h3 {
-  font-size: 14px;
-  margin-bottom: 0.5rem;
-}
-
-.phrase-input textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 14px;
 }
 
 .app-container {

@@ -1,6 +1,9 @@
 <template>
   <div class="chat-panel">
     <div class="messages" ref="messagesContainer">
+      <div v-if="messages.length === 0 && !loading" class="empty-state">
+        Let's learn English together!
+      </div>
       <div
           v-for="(msg, index) in messages"
           :key="index"
@@ -8,6 +11,11 @@
           :class="msg.type.toLowerCase()"
       >
         <div class="content">{{ msg.content }}</div>
+      </div>
+      <div v-if="loading" class="message assistant pending">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
       </div>
     </div>
 
@@ -73,7 +81,7 @@ function scrollToBottom() {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: white;
+  background: var(--surface);
 }
 
 .messages {
@@ -93,14 +101,24 @@ function scrollToBottom() {
 
 .message.user {
   align-self: flex-end;
-  background: #007bff;
-  color: white;
+  background: var(--user-msg-bg);
+  color: var(--user-msg-text);
 }
 
 .message.assistant {
   align-self: flex-start;
-  background: #f1f3f4;
-  color: #333;
+  background: var(--asst-msg-bg);
+  color: var(--asst-msg-text);
+}
+
+.empty-state {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--border);
+  font-size: 28px;
+  font-weight: 600;
 }
 
 .content {
@@ -108,8 +126,31 @@ function scrollToBottom() {
   word-wrap: break-word;
 }
 
+.pending {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.75rem 1rem;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  animation: bounce 1.2s infinite ease-in-out;
+}
+
+.dot:nth-child(2) { animation-delay: 0.2s; }
+.dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: translateY(0); }
+  40%           { transform: translateY(-6px); }
+}
+
 .input-area {
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid var(--border);
   padding: 1rem;
   display: flex;
   gap: 0.75rem;
@@ -118,21 +159,23 @@ function scrollToBottom() {
 textarea {
   flex: 1;
   padding: 0.75rem;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
   border-radius: 6px;
   font-family: inherit;
   font-size: 14px;
   resize: none;
+  background: var(--surface);
+  color: var(--text);
 }
 
 textarea:focus {
   outline: none;
-  border-color: #007bff;
+  border-color: var(--primary);
 }
 
 button {
   padding: 0.75rem 1.5rem;
-  background: #007bff;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 6px;
@@ -141,11 +184,11 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: #0056b3;
+  background: var(--primary-hover);
 }
 
 button:disabled {
-  background: #ccc;
+  background: var(--border);
   cursor: not-allowed;
 }
 </style>

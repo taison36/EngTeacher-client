@@ -15,11 +15,15 @@
         <span>Session {{ sessions.indexOf(session) + 1 }}</span>
       </div>
     </div>
+
+    <button class="add-phrases-btn" @click="router.push('/phrases')">
+      + Add Phrases
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import type { Session } from '@/types';
 
 interface Props {
@@ -34,6 +38,7 @@ interface Emits {
 
 defineProps<Props>();
 const emit = defineEmits<Emits>();
+const router = useRouter();
 
 function selectSession(sessionId: string) {
   emit('select-session', sessionId);
@@ -48,8 +53,8 @@ function createNewSession() {
 .session-list {
   width: 250px;
   height: 100vh;
-  background: #f8f9fa;
-  border-right: 1px solid #e0e0e0;
+  background: var(--surface-alt);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   padding: 1rem;
@@ -58,7 +63,7 @@ function createNewSession() {
 .new-session-btn {
   width: 100%;
   padding: 0.75rem;
-  background: #007bff;
+  background: var(--primary);
   color: white;
   border: none;
   border-radius: 6px;
@@ -68,7 +73,7 @@ function createNewSession() {
 }
 
 .new-session-btn:hover {
-  background: #0056b3;
+  background: var(--primary-hover);
 }
 
 .sessions {
@@ -79,20 +84,37 @@ function createNewSession() {
 .session-item {
   padding: 0.75rem;
   margin-bottom: 0.5rem;
-  background: white;
+  background: var(--surface);
   border-radius: 6px;
   cursor: pointer;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border);
+  color: var(--text);
   transition: all 0.2s;
 }
 
 .session-item:hover {
-  border-color: #007bff;
+  border-color: var(--primary);
 }
 
 .session-item.active {
-  background: #007bff;
+  background: var(--primary);
   color: white;
-  border-color: #007bff;
+  border-color: var(--primary);
+}
+
+.add-phrases-btn {
+  width: 100%;
+  padding: 0.6rem;
+  background: var(--surface);
+  color: var(--green);
+  border: 1px solid var(--green);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  margin-top: 0.5rem;
+}
+
+.add-phrases-btn:hover {
+  background: var(--green-light);
 }
 </style>
