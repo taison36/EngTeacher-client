@@ -2,6 +2,7 @@ import axios from 'axios';
 import type {
     User,
     UserSettings,
+    Phrase,
     Session,
     Exercise,
     ChatMessage,
@@ -10,46 +11,68 @@ import type {
 } from '@/types';
 
 const api = axios.create({
-    baseURL: 'http://localhost:8080/api',
+    baseURL: import.meta.env.VITE_API_URL ?? 'http://localhost:8080/api',
     headers: {
         'Content-Type': 'application/json'
     }
 });
 
+// Attach JWT token to every request
+api.interceptors.request.use(config => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+});
+
+export interface AuthRequest {
+    name: string;
+    password: string;
+}
+
+export interface AuthResponse {
+    token: string;
+    user: { id: string; name: string };
+}
+
+export const authApi = {
+    register: (req: AuthRequest) =>
+        api.post<AuthResponse>('/auth/register', req),
+
+    login: (req: AuthRequest) =>
+        api.post<AuthResponse>('/auth/login', req),
+};
+
 export const userApi = {
-    createUser: (name: string) =>
-        api.post<User>('/user/create', name, {
-            headers: { 'Content-Type': 'text/plain' }
-        }),
+    getUser: () =>
+        api.get<User>('/user'),
 
-    getUser: (userId: string) =>
-        api.get<User>(`/user/${userId}`),
+    getPhrases: () =>
+        api.get<Phrase[]>('/user/phrases'),
 
-    getUserByName: (name: string) =>
-        api.get<User>(`/user/by-name/${name}`),
+    addPhrases: (phrases: { content: string }[]) =>
+        api.post<User>('/user/phrases', phrases),
 
-    addPhrases: (userId: string, phrases: { content: string }[]) =>
-        api.post<User>(`/user/${userId}/phrases`, phrases),
-
-    updateSettings: (userId: string, settings: UserSettings) =>
-        api.put<UserSettings>(`/user/${userId}/settings`, settings)
+    updateSettings: (settings: UserSettings) =>
+        api.put<UserSettings>('/user/settings', settings),
 };
 
 export const sessionApi = {
-    createSession: (userId: string) =>
-        api.post<Session>(`/user/${userId}/session/`),
+    createSession: () =>
+        api.post<Session>('/session'),
 
-    getSession: (userId: string, sessionId: string) =>
-        api.get<Session>(`/user/${userId}/session/${sessionId}`),
+    getSession: (sessionId: string) =>
+        api.get<Session>(`/session/${sessionId}`),
 
-    getMessages: (userId: string, sessionId: string) =>
-        api.get<ChatMessage[]>(`/user/${userId}/session/${sessionId}/messages`),
+    getMessages: (sessionId: string) =>
+        api.get<ChatMessage[]>(`/session/${sessionId}/messages`),
 
-    createExercises: (userId: string, sessionId: string) =>
-        api.post<Exercise[]>(`/user/${userId}/session/${sessionId}/exercise`)
+    createExercises: (sessionId: string) =>
+        api.post<Exercise[]>(`/session/${sessionId}/exercise`),
 };
 
 export const chatApi = {
     sendMessage: (request: ChatMessageRequest) =>
-        api.post<ChatMessageResponse>('/chat/message', request)
+        api.post<ChatMessageResponse>('/chat/message', request),
 };

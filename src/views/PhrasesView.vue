@@ -19,16 +19,17 @@
         </div>
       </div>
 
-      <div class="right" v-if="existingPhrases.length > 0">
+      <div class="right">
         <div class="right-header">
           <h3>Your phrases</h3>
           <button class="settings-btn" @click="settingsOpen = true" title="Settings">⚙️</button>
         </div>
         <div class="phrase-list">
+          <p v-if="existingPhrases.length === 0" class="empty-hint">No phrases yet. Add some on the left.</p>
           <div v-for="phrase in existingPhrases" :key="phrase.id" class="phrase-row">
             <span class="phrase-content">{{ phrase.content }}</span>
             <div class="phrase-stats">
-              <span class="stat">{{ phrase.completedExercises }} done</span>
+              <span class="stat">{{ phrase.completedExercises }} exercises done</span>
               <div class="rate-bar">
                 <div class="rate-fill" :style="{ width: rateWidth(phrase.understandingRate) }"></div>
               </div>
@@ -79,9 +80,16 @@ import type { UserSettings } from '@/types';
 const router = useRouter();
 const userStore = useUserStore();
 
-onMounted(() => {
+onMounted(async () => {
   if (!userStore.user) {
     router.replace('/');
+    return;
+  }
+  try {
+    const response = await userApi.getPhrases();
+    userStore.user.phrases = response.data;
+  } catch (error) {
+    console.error('Failed to fetch phrases:', error);
   }
 });
 
@@ -98,6 +106,15 @@ const draft = reactive<UserSettings>({
 });
 
 function rateWidth(rate: number): string {
+  const settings = userStore.user?.settings;
+  if (settings) {
+    const min = settings.minUnderstandingRate;
+    const max = settings.maxUnderstandingRate;
+    if (max !== min) {
+      const pct = ((rate - min) / (max - min)) * 100;
+      return Math.min(Math.max(pct, 0), 100) + '%';
+    }
+  }
   return Math.min(rate * 10, 100) + '%';
 }
 
@@ -111,7 +128,7 @@ async function submit() {
       .map(content => ({ content }));
 
   try {
-    const response = await userApi.addPhrases(userStore.user.id, phrases);
+    const response = await userApi.addPhrases(phrases);
     userStore.setUser(response.data);
     router.push('/');
   } catch (error) {
@@ -123,7 +140,7 @@ async function saveSettings() {
   if (!userStore.user) return;
   saving.value = true;
   try {
-    const response = await userApi.updateSettings(userStore.user.id, { ...draft });
+    const response = await userApi.updateSettings({ ...draft });
     userStore.user.settings = response.data;
     settingsOpen.value = false;
   } catch (error) {
@@ -277,6 +294,12 @@ textarea:focus {
   flex-direction: column;
   gap: 0.5rem;
   overflow-y: auto;
+}
+
+.empty-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-faint);
 }
 
 .phrase-row {

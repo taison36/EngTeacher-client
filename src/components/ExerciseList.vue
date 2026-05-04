@@ -16,7 +16,11 @@
       </span>
     </div>
 
-    <div v-if="exercises.length === 0" class="empty">
+    <div v-if="loading" class="skeleton-list">
+      <div v-for="i in 3" :key="i" class="skeleton-item"></div>
+    </div>
+
+    <div v-else-if="exercises.length === 0" class="empty">
       No exercises yet
     </div>
 
@@ -48,6 +52,7 @@ import SettingsModal from '@/components/SettingsModal.vue';
 
 interface Props {
   exercises: Exercise[];
+  loading?: boolean;
 }
 
 interface Emits {
@@ -144,6 +149,28 @@ h3 {
   text-align: center;
   margin-top: 2rem;
   font-size: 14px;
+}
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+.skeleton-item {
+  height: 60px;
+  background: var(--border);
+  border-radius: 8px;
+  animation: shimmer 1.4s infinite ease-in-out;
+}
+
+.skeleton-item:nth-child(2) { animation-delay: 0.2s; }
+.skeleton-item:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes shimmer {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
 }
 
 .exercises {

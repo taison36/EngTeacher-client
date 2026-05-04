@@ -29,6 +29,7 @@ export interface Exercise {
 export interface Session {
     id: string;
     exercises: Exercise[];
+    createdAt: string;
 }
 
 export interface ChatMessage {
@@ -37,7 +38,6 @@ export interface ChatMessage {
 }
 
 export interface ChatMessageRequest {
-    userId: string;
     sessionId: string;
     message: string;
 }
