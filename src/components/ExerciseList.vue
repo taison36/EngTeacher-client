@@ -29,10 +29,11 @@
           v-for="exercise in sortedExercises"
           :key="exercise.id"
           class="exercise-item"
-          :class="{ done: exercise.done }"
+          :class="exercise.state.toLowerCase()"
       >
         <div class="exercise-top">
-          <span v-if="exercise.done" class="done-badge">Done</span>
+          <span v-if="exercise.state === 'COMPLETED'" class="state-badge completed">Done</span>
+          <span v-else-if="exercise.state === 'FAILED'" class="state-badge failed">Failed</span>
         </div>
         <div class="question">{{ exercise.question }}</div>
       </div>
@@ -65,10 +66,12 @@ const emit = defineEmits<Emits>();
 const { dark, toggle } = useTheme();
 const settingsOpen = ref(false);
 
-const doneCount = computed(() => props.exercises.filter(e => e.done).length);
+const stateOrder: Record<string, number> = { NOT_ATTEMPTED: 0, FAILED: 1, COMPLETED: 2 };
+
+const doneCount = computed(() => props.exercises.filter(e => e.state === 'COMPLETED').length);
 
 const sortedExercises = computed(() =>
-  [...props.exercises].sort((a, b) => Number(a.done) - Number(b.done))
+  [...props.exercises].sort((a, b) => stateOrder[a.state] - stateOrder[b.state])
 );
 </script>
 
@@ -189,8 +192,12 @@ h3 {
   transition: all 0.2s;
 }
 
-.exercise-item.done {
+.exercise-item.completed {
   opacity: 0.5;
+}
+
+.exercise-item.failed {
+  border-color: var(--red, #e53e3e);
 }
 
 .exercise-top {
@@ -200,13 +207,21 @@ h3 {
   margin-bottom: 0.4rem;
 }
 
-.done-badge {
+.state-badge {
   font-size: 11px;
   font-weight: 600;
-  color: var(--green);
-  background: var(--green-light);
   padding: 0.15rem 0.5rem;
   border-radius: 4px;
+}
+
+.state-badge.completed {
+  color: var(--green);
+  background: var(--green-light);
+}
+
+.state-badge.failed {
+  color: var(--red, #e53e3e);
+  background: var(--red-light, #fff5f5);
 }
 
 .question {
@@ -215,7 +230,7 @@ h3 {
   line-height: 1.4;
 }
 
-.exercise-item.done .question {
+.exercise-item.completed .question {
   text-decoration: line-through;
   color: var(--text-faint);
 }

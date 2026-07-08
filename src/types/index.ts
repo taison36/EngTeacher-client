@@ -19,11 +19,13 @@ export interface Phrase {
     completedExercises: number;
 }
 
+export type ExerciseState = 'NOT_ATTEMPTED' | 'COMPLETED' | 'FAILED';
+
 export interface Exercise {
     id: string;
     question: string;
     phrase: Phrase;
-    done: boolean;
+    state: ExerciseState;
 }
 
 export interface Session {
